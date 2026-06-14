@@ -1,0 +1,14 @@
+{
+  "name": "csrf-demo-root",
+  "version": "1.0.0",
+  "description": "Interactive CSRF and XSS Demo",
+  "scripts": {
+    "install-all": "cd bank-app && npm install && cd ../attacker-site && npm install",
+    "start": "npx concurrently \"npm run start-bank\" \"npm run start-attacker\"",
+    "start-bank": "cd bank-app && npm start",
+    "start-attacker": "cd attacker-site && npm start"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

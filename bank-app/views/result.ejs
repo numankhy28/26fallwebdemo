@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Transaction Result</title>
+    <style>
+        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f4f4f9; }
+        .card { padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; max-width: 400px; background: #fff; }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .icon { font-size: 3em; margin-bottom: 15px; }
+        a { display: inline-block; margin-top: 20px; text-decoration: none; background: #0056b3; color: white; padding: 10px 20px; border-radius: 4px; }
+        a:hover { background: #004494; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <% if (success) { %>
+            <div class="icon success">✅</div>
+            <h2 class="success">Success!</h2>
+        <% } else { %>
+            <div class="icon error">⚠️</div>
+            <h2 class="error">Blocked or Failed</h2>
+        <% } %>
+        <p><strong>Message:</strong> <%= message %></p>
+        <a href="/dashboard">Back to Dashboard</a>
+    </div>
+</body>
+</html>

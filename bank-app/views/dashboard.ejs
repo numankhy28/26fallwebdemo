@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bank Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; margin: 0; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: #0056b3; color: #fff; padding: 10px 20px; border-radius: 8px; }
+        .header a { color: #fff; text-decoration: none; font-weight: bold; }
+        .content { display: flex; gap: 20px; margin-top: 20px; }
+        .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex: 1; }
+        .balance { font-size: 2em; color: #28a745; margin: 10px 0; }
+        input[type="number"], input[type="text"] { width: 100%; padding: 8px; margin: 5px 0 15px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #0056b3; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #004494; }
+        hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
+        .vulnerable-section { border: 2px solid #dc3545; padding: 15px; border-radius: 5px; margin-bottom: 20px;}
+        .protected-section { border: 2px solid #28a745; padding: 15px; border-radius: 5px; margin-bottom: 20px;}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Welcome, <%= user %>!</h2>
+        <a href="/logout">Logout</a>
+    </div>
+
+    <div class="content">
+        <div class="card">
+            <h3>Your Balance</h3>
+            <div class="balance">$<%= balance %></div>
+        </div>
+
+        <div class="card">
+            <h3>Transfer Money (Vulnerable)</h3>
+            <div class="vulnerable-section">
+                <h4>Vulnerable POST Transfer</h4>
+                <form action="/transfer-vulnerable" method="POST">
+                    <label>Amount:</label>
+                    <input type="number" name="amount" value="100" required>
+                    <label>To:</label>
+                    <input type="text" name="to" value="Alice" required>
+                    <button type="submit">Transfer (POST)</button>
+                </form>
+            </div>
+            
+            <div class="vulnerable-section">
+                <h4>Vulnerable GET Transfer</h4>
+                <form action="/transfer-get" method="GET">
+                    <label>Amount:</label>
+                    <input type="number" name="amount" value="100" required>
+                    <label>To:</label>
+                    <input type="text" name="to" value="Alice" required>
+                    <button type="submit">Transfer (GET)</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Transfer Money (Protected)</h3>
+            
+            <div class="protected-section">
+                <h4>Protected by Anti-CSRF Token</h4>
+                <form action="/transfer-token" method="POST">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <label>Amount:</label>
+                    <input type="number" name="amount" value="100" required>
+                    <label>To:</label>
+                    <input type="text" name="to" value="Alice" required>
+                    <button type="submit">Transfer</button>
+                </form>
+            </div>
+
+            <div class="protected-section">
+                <h4>Protected by Custom Header</h4>
+                <p style="font-size: 0.8em; color: #555;">(Requires JS to append X-Requested-With header)</p>
+                <form id="custom-header-form">
+                    <label>Amount:</label>
+                    <input type="number" name="amount" id="header-amount" value="100" required>
+                    <label>To:</label>
+                    <input type="text" name="to" id="header-to" value="Alice" required>
+                    <button type="button" onclick="submitWithHeader()">Transfer with JS</button>
+                </form>
+            </div>
+
+            <div class="protected-section">
+                <h4>Protected by Fetch Metadata</h4>
+                <p style="font-size: 0.8em; color: #555;">(Browser automatically sends Sec-Fetch-Site: same-origin)</p>
+                <form action="/transfer-metadata" method="POST">
+                    <label>Amount:</label>
+                    <input type="number" name="amount" value="100" required>
+                    <label>To:</label>
+                    <input type="text" name="to" value="Alice" required>
+                    <button type="submit">Transfer (Metadata)</button>
+                </form>
+            </div>
+
+            <div class="protected-section">
+                <h4>Protected by SameSite Cookie</h4>
+                <p style="font-size: 0.8em; color: #555;">(Browser automatically sends SameSite=Strict cookie here)</p>
+                <form action="/transfer-samesite" method="POST">
+                    <label>Amount:</label>
+                    <input type="number" name="amount" value="100" required>
+                    <label>To:</label>
+                    <input type="text" name="to" value="Alice" required>
+                    <button type="submit">Transfer (SameSite)</button>
+                </form>
+            </div>
+            
+            <script>
+                function submitWithHeader() {
+                    const amount = document.getElementById('header-amount').value;
+                    const to = document.getElementById('header-to').value;
+                    fetch('/transfer-header', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: new URLSearchParams({ amount, to })
+                    }).then(res => res.text()).then(html => {
+                        document.write(html);
+                    });
+                }
+            </script>
+        </div>
+    </div>
+</body>
+</html>

